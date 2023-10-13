@@ -3,6 +3,9 @@
 #include "mythread.h"
 #include "threadmanager.h"
 
+
+bool passwordCracked = false;
+
 /*
  * std::pow pour les long long unsigned int
  */
@@ -67,7 +70,10 @@ QString ThreadManager::startHacking(
      * Mot de passe à tester courant
      */
     QString currentPasswordString;
-
+    /*
+     * Resultat
+     */
+    QString result;
     /*
      * Tableau contenant les index dans la chaine charset des caractères de
      * currentPasswordString
@@ -97,17 +103,25 @@ QString ThreadManager::startHacking(
     currentPasswordString.fill(charset.at(0),nbChars);
     currentPasswordArray.fill(0,nbChars);
 
+
     QVector<PcoThread*> threads;
 
     for (unsigned int i = 0; i < nbThreads; i++){
-            threads.push_back(new PcoThread(workThread,i, nbThreads, nbComputed, nbToCompute, &md5, std::ref(hash),  std::ref(salt), currentPasswordArray, currentPasswordString, nbValidChars, std::ref(charset), nbChars));
+        threads.push_back(new PcoThread(workThread,i, nbThreads, nbComputed, nbToCompute, std::ref(hash),  std::ref(salt), currentPasswordArray, currentPasswordString, nbValidChars, std::ref(charset), nbChars, std::ref(result)));
     }
+
     for (unsigned int i = 0; i < nbThreads; i++){
-            threads[i]->join();
+        threads[i]->join();
+        delete threads[i];
     }
     /*
      * Si on arrive ici, cela signifie que tous les mot de passe possibles ont
      * été testés, et qu'aucun n'est la préimage de ce hash.
      */
-    return QString("");
+    if(result.isEmpty()){
+        return QString("");
+    }else{
+        return result;
+    }
+
 }

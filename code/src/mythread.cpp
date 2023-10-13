@@ -1,22 +1,37 @@
 #include "mythread.h"
 using namespace std;
 
-QString workThread(int threadID, unsigned int nbThreads, long long unsigned int nbComputed, long long unsigned int nbToCompute, QCryptographicHash* md5, QString hash, QString salt, QVector<unsigned int> currentPasswordArray, QString currentPasswordString, unsigned int nbValidChars, QString charset, unsigned int nbChars){
-    unsigned int i;
-    while (nbComputed < nbToCompute) {
-        /* On vide les données déjà ajoutées au générateur */
-        md5->reset();
-        /* On préfixe le mot de passe avec le sel */
-        md5->addData(salt.toLatin1());
-        md5->addData(currentPasswordString.toLatin1());
-        /* On calcul le hash */
+extern bool passwordCracked;
 
+void workThread(int threadID, unsigned int nbThreads, long long unsigned int nbComputed, long long unsigned int nbToCompute, QString hash, QString salt, QVector<unsigned int> currentPasswordArray, QString currentPasswordString, unsigned int nbValidChars, QString charset, unsigned int nbChars, QString result)
+{
+    QCryptographicHash md5(QCryptographicHash::Md5);
+    QString currentHash;
+    while (nbComputed < nbToCompute)
+    {
+        /* On vide les données déjà ajoutées au générateur */
+        md5.reset();
+        /* On préfixe le mot de passe avec le sel */
+        md5.addData(salt.toLatin1());
+        md5.addData(currentPasswordString.toLatin1());
+        /* On calcul le hash */
+        currentHash = md5.result().toHex();
 
         /*
          * Si on a trouvé, on retourne le mot de passe courant (sans le sel)
          */
-        if (md5->result().toHex() == hash)
-            return currentPasswordString;
+        if (currentHash == hash)
+        {
+            result = currentPasswordString;
+            passwordCracked = true;
+            return;
+        }
+
+        if(passwordCracked)
+            return;
+        //if ((nbComputed % 1000) == 0) {
+        //            incrementPercentComputed((double)1000/nbToCompute);
+        //        }
         /*
          * On récupère le mot de pass à tester suivant.
          *
@@ -26,16 +41,21 @@ QString workThread(int threadID, unsigned int nbThreads, long long unsigned int 
          *
          * Le digit de poids faible étant en position 0
          */
-        i = 0;
+        unsigned int i = 0;
 
-        while (i < (unsigned int)currentPasswordArray.size()) {
+        while (i < (unsigned int)currentPasswordArray.size())
+        {
             currentPasswordArray[i] = currentPasswordArray[i] + threadID + nbThreads;
 
-            if (currentPasswordArray[i] >= nbValidChars) {
+            if (currentPasswordArray[i] >= nbValidChars)
+            {
                 currentPasswordArray[i] = 0;
                 i++;
-            } else
+            }
+            else
+            {
                 break;
+            }
         }
 
         /*
@@ -47,5 +67,4 @@ QString workThread(int threadID, unsigned int nbThreads, long long unsigned int 
         std::cout << "Thread " << threadID << " : " << currentPasswordString.toStdString() << endl;
         nbComputed++;
     }
-    return QString("");
 }
