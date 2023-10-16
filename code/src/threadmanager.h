@@ -25,7 +25,7 @@ class ThreadManager: public QObject
 {
     Q_OBJECT
 private:
-
+    double progress; // membre privé pour stocker la progression
 public:
     /**
      * \brief ThreadManager Constructeur simple
@@ -52,7 +52,6 @@ public:
             unsigned int nbChars,
             unsigned int nbThreads
     );
-
 
     /**
      * \brief incrementPercentComputed fonction qui indique que le pourcentage
