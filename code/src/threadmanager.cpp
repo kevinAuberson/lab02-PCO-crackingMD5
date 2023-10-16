@@ -3,8 +3,7 @@
 #include "mythread.h"
 #include "threadmanager.h"
 
-
-bool passwordCracked = false;
+extern QString result;
 
 /*
  * std::pow pour les long long unsigned int
@@ -56,10 +55,8 @@ QString ThreadManager::startHacking(
         unsigned int nbThreads
 )
 {
-//    unsigned int i;
 
     long long unsigned int nbToCompute;
-    static long long unsigned int nbComputed;
 
     /*
      * Nombre de caractères différents pouvant composer le mot de passe
@@ -67,61 +64,28 @@ QString ThreadManager::startHacking(
     unsigned int nbValidChars;
 
     /*
-     * Mot de passe à tester courant
-     */
-    QString currentPasswordString;
-    /*
-     * Resultat
-     */
-    QString result;
-    /*
-     * Tableau contenant les index dans la chaine charset des caractères de
-     * currentPasswordString
-     */
-    QVector<unsigned int> currentPasswordArray;
-
-    /*
-     * Object QCryptographicHash servant à générer des md5
-     */
-    QCryptographicHash md5(QCryptographicHash::Md5);
-
-    /*
      * Calcul du nombre de hash à générer
      */
     nbToCompute        = intPow(charset.length(),nbChars);
-    nbComputed         = 0;
 
     /*
      * Nombre de caractères différents pouvant composer le mot de passe
      */
     nbValidChars       = charset.length();
 
-    /*
-     * On initialise le premier mot de passe à tester courant en le remplissant
-     * de nbChars fois du premier caractère de charset
-     */
-    currentPasswordString.fill(charset.at(0),nbChars);
-    currentPasswordArray.fill(0,nbChars);
+
 
 
     QVector<PcoThread*> threads;
 
     for (unsigned int i = 0; i < nbThreads; i++){
-        threads.push_back(new PcoThread(workThread,i, nbThreads, nbComputed, nbToCompute, std::ref(hash),  std::ref(salt), currentPasswordArray, currentPasswordString, nbValidChars, std::ref(charset), nbChars, std::ref(result)));
+        threads.push_back(new PcoThread(workThread,this, i, nbThreads, nbToCompute, std::ref(hash),  std::ref(salt), nbValidChars, std::ref(charset), nbChars));
     }
 
-    for (unsigned int i = 0; i < nbThreads; i++){
-        threads[i]->join();
-        delete threads[i];
+    for (PcoThread* thread : threads){
+        thread->join();
+        delete thread;
     }
-    /*
-     * Si on arrive ici, cela signifie que tous les mot de passe possibles ont
-     * été testés, et qu'aucun n'est la préimage de ce hash.
-     */
-    if(result.isEmpty()){
-        return QString("");
-    }else{
-        return result;
-    }
-
+    //  renvoie le bon hash ou est vide si aucun trouver
+    return result;
 }
