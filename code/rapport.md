@@ -69,8 +69,9 @@ Nous avons effectué une série de tests pour vérifier les performances et le b
 
 Dans ce tableau, nous avons représenté le temps de recherche du hash du mot de passe à 4 lettres "*KKKK*" en fonction du nombre de threads utilisés dans notre programme.
 
-Nous constatons un comportement inattendu, à savoir que le temps de recherche augmente à mesure que le nombre de threads augmente, ce qui semble aller à l'encontre de notre intuition.
-Ce comportement peut être attribué à une gestion inadéquate des ressources partagées. Lorsque plusieurs threads accèdent simultanément aux mêmes variables partagées, cela peut entraîner des temps d'attente et des ralentissements.
+En observant les données mesurées, nous constatons que le temps de recherche augmente de façon significative à mesure que le nombre de threads augmente, ce qui semble aller à l'encontre de notre intuition. 
+
+Cependant, lorsque le nombre de threads augmente considérablement, il est possible que les temps deviennent plus longs. Cette augmentation peut s'expliquer par le fait que la gestion de multiples threads ajoute une certaine complexité. Le programme doit gérer la concurrence entre les threads et effectuer des changements de contexte, ce qui peut entraîner des temps d'attente et des ralentissements.
 
 
 ### *Temps de recherche en millisecondes avec 3 threads en fonction de la taille du mot de passe*
