@@ -13,42 +13,47 @@ Le but central de ce projet est le développement d'une application capable de d
 
 ## Choix d'implémentation
 
-Afin d'aborder le problème de manière optimale, nous avons ajouté des éléments dans les fichiers *mythread.h* et *mythread.cpp* et tout en effectuant les modifications nécessaires à la fonction *startHacking*. 
+Afin d'aborder le problème de manière optimale, nous avons ajouté des éléments dans les fichiers *mythread.h* et *mythread.cpp*, tout en effectuant les modifications nécessaires à la fonction *startHacking*. 
 
 Notre principal objectif était d'assurer la création, le lancement, et la gestion des threads directement à l'intérieur de cette fonction. 
 
-- Création de Threads
+Puis, lors de la création de chaque thread, celui-ci exécute la fonction *workThread* qui s'occupera alors de la recherche du mot de passe correspondant au hash qui lui est passé. 
+
+- **Création de threads**
 
     À l'intérieur de la fonction *startHacking*, nous générons et lançons les threads requis pour le travail concurrent. Ils sont stockés dans un tableau de pointeur de threads de type objet *PcoThread*. 
 
-- Partage d'informations 
+- **Partage d'informations**
     
     Pour que chaque thread accomplisse sa tâche de manière indépendante, nous avons pris soin de partager les paramètres nécessaires.
-    Nous passons par référence aux threads les paramètres suivants: hash à rechercher, le sel, le jeu de caractères et le nombre de caractères dans le mot de passe. 
+    Nous passons par référence aux threads les paramètres suivants: un pointeur vers l'objet *ThreadManager* qui appelle la fonction *startHacking*, hash à rechercher, le sel, le jeu de caractères. 
 
-- Communication entre les threads
+- **Communication entre les threads**
+
      La variable *passwordCracked* est introduite pour gérer la synchronisation entre les threads. Lorsqu'un thread trouve le mot de passe, il met à jour *passwordCracked*, ce qui permet aux autres threads de s'arrêter. 
      
      La variable *result* est utilisée pour stocker le mot de passe trouvé. L'utilisation de cette variable partagée permet à chaque thread d'être capable d'écrire le résultat final. Elle est initialisée vide pour le cas échéant où l'on ne trouve pas le mot de passe. 
 
-- Répartition du Travail
+     La variable *nbToComputeGlobal* représente le nombre de possibilités total de mots de passes à calculer selon le nombre de caractères du mot de passe ainsi que la taille du set de caractères autorisés. Cette variable est utilisée uniquement pour mettre à jour la barre de progression au sein de la fonction *workThread*. 
+
+- **Répartition du travail**
 
     Une partie essentielle de notre implémentation consiste en une répartition efficace du travail entre les threads. Chaque thread exécute en parallèle la fonction *workThread*, c'est ici qu'elle teste les combinaisons de mots de passe dans le but de trouver le mot de passe correspondant au hash MD5 fourni. 
     
     En effet, chaque thread explore le tableau *currentPasswordArray* de manière stratégique pour garantir une distribution équilibrée du travail. 
-    Chacun d'entre eux parcourt les éléments de ce tableau en fonction de son *ID* thread et l'incrémentation se fait avec le nombre total de threads.
+    Chacun d'entre eux parcourt les éléments de ce tableau en fonction de son *ID* thread et l'incrémentation se fait avec le nombre total de threads. 
+    Le nombre d'itérations de chaque thread est determiné par la variable *nbToComputePerThread*. Celle-ci est calculé en fonction du nombre total de threads. 
     Lorsqu'un thread atteint la fin de son sous-ensemble de combinaisons, il incrémente l'index actuel d'où il se trouve dans le tableau de manière à prendre en charge de nouvelles combinaisons. 
 
     L'objectif est d'assurer que chaque thread traite un sous-ensemble différent de combinaisons de mots de passe, répartissant ainsi efficacement la charge de travail et contribuant ainsi à une progression plus rapide de la recherche globale.
 
 
-- Terminaison des Threads
+- **Terminaison des threads**
 
     Nous avons implémenté une fonctionnalité de terminaison des threads qui nous a permis d'obtenir le résultat sans attendre la fin de l'exécution de tous les threads. Dès qu'un thread trouve le mot de passe correspondant au hash MD5, la variable statique *passwordCracked* est définie à true, le mot de passe est enregistré dans la variable *result*, et les threads sont arrêtés. Cela a contribué à économiser des ressources en évitant l'exécution inutile de threads supplémentaires.
     Une fois le résultat retourné, on lance une boucle qui joint chaque thread du vector de threads. 
 
 ## Tests effectués
-
 
 Nous avons effectué une série de tests pour vérifier les performances et le bon fonctionnement de notre logiciel de crackage de hash MD5. Chaque test était conçu pour évaluer différents aspects de l'application.
 
@@ -89,11 +94,11 @@ Ce tableau présente une analyse du temps de recherche en fonction de la taille 
 |5|***a| 233 | 
 
 Pour ce test, nous avons pris une liste de mots triés par ordre alphabétique puis nous avons calculé le temps de recherche pris par l'algorithme. 
-En général, nous avons observé une tendance où le temps de recherche augmente à mesure que nous progressons dans le dictionnaire, ce qui est cohérent avec nos attentes. Cependant, il y a une valeur qui se distingue comme étant particulièrement surprenante, celle associée au mot "***a."
+En général, nous avons observé une tendance où le temps de recherche augmente à mesure que nous progressons dans le dictionnaire, ce qui est cohérent avec la manière dont nous parcourons *currentPasswordArray* (par ordre alphabétique).  Cependant, il y a une valeur qui se distingue comme étant particulièrement surprenante, celle associée au mot "***a."
 
 ### Test de précision de recherche
 
-Nous avons réalisé plusieurs autres tests aléatoires en plus des ceux précédemment mentionnés. Lorsque nous avons entrepris de rechercher des mots de passe situés en fin de dictionnaire et comportant plus de 4 caractères, nous avons été confrontés à des temps d'attente considérablement prolongés, atteignant parfois plusieurs minutes. Dans certains cas, notamment lors de la recherche de mots de passe tels que "FFFGG" ou composés uniquement de caractères spéciaux ("*****"), nous n'avons pas réussi à les trouver du tout.
+Nous avons réalisé plusieurs autres tests avec des mots aléatoires en plus des ceux précédemment mentionnés. Lorsque nous avons entrepris de rechercher des mots de passe situés en fin de dictionnaire et comportant plus de 4 caractères, nous avons été confrontés à des temps d'attente considérablement prolongés, atteignant parfois plusieurs minutes. Dans certains cas, notamment lors de la recherche de mots de passe tels que "FFFGG" ou composés uniquement de caractères spéciaux ("*****"), nous n'avons pas réussi à les trouver du tout.
 
 # Conclusion
 
@@ -101,6 +106,6 @@ Ce projet illustre la manière dont l'utilisation du parallélisme peut avoir un
 
 En implémentant le parallélisme à l'aide de threads, nous nous attendions à améliorer considérablement les performances de l'application, réduisant ainsi le temps nécessaire pour cracker un hash MD5. 
 
-Toutefois, certains tests ont montré les limitations et vulnérabilités de notre algorithme notamment pour les cas de mots de passe à plus de 4 lettres ou placés en fin de dictionnaire. 
+Toutefois, certains tests nous ont montré les limitations et vulnérabilités de notre algorithme notamment pour les cas de mots de passe à plus de 4 lettres ou placés en fin de dictionnaire. Il est aussi important de noter que l'exécution de l'application peut varier d'un ordinateur à l'autre. Elle dépend de plusieurs paramètres, dont le nombre de coeurs du processeur disponibles. Ces facteurs peuvent influencer la capacité de la machine à effectuer des calculs en parallèle. 
 
 Pour améliorer le comportement de notre programme, il serait bien d'étudier la manière dont nous avons géré les ressources partagées. Cela pourrait inclure une synchronisation plus fine des threads, la réduction des temps d'attente ou même l'optimisation de la manière dont les données partagées sont accédées.
