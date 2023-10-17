@@ -23,13 +23,13 @@ Notre principal objectif était d'assurer la création, le lancement, et la gest
 
 - Partage d'informations 
     
-    Pour que chaque thread accomplisse sa tâche de manière indépendante, nous avons pris soin de partager de manière sécurisée les paramètres nécessaires.
+    Pour que chaque thread accomplisse sa tâche de manière indépendante, nous avons pris soin de partager les paramètres nécessaires.
     Nous passons par référence aux threads les paramètres suivants: hash à rechercher, le sel, le jeu de caractères et le nombre de caractères dans le mot de passe. 
 
 - Communication entre les threads
      La variable *passwordCracked* est introduite pour gérer la synchronisation entre les threads. Lorsqu'un thread trouve le mot de passe, il met à jour *passwordCracked*, ce qui permet aux autres threads de s'arrêter. 
      
-     La variable *result* est utilisée pour stocker le mot de passe trouvé. L'utilisation de cette variable partagée permet à chaque thread d'être capable d'écrire le résultat final. Elle est initialisée vide pour le cas échéant ou l'on ne trouve pas le mot de passe. 
+     La variable *result* est utilisée pour stocker le mot de passe trouvé. L'utilisation de cette variable partagée permet à chaque thread d'être capable d'écrire le résultat final. Elle est initialisée vide pour le cas échéant où l'on ne trouve pas le mot de passe. 
 
 - Répartition du Travail
 
@@ -48,31 +48,59 @@ Notre principal objectif était d'assurer la création, le lancement, et la gest
     Une fois le résultat retourné, on lance une boucle qui joint chaque thread du vector de threads. 
 
 ## Tests effectués
-*----------------------(à enlever)-----------------------*
 
-*Description de chaque test, et information sur le fait qu'il ait passé ou non*
-
-*----------------------(à enlever)-----------------------*
 
 Nous avons effectué une série de tests pour vérifier les performances et le bon fonctionnement de notre logiciel de crackage de hash MD5. Chaque test était conçu pour évaluer différents aspects de l'application.
 
-*----------------------(à effectuer)-----------------------*
-- Test de performance (temps)
-- Test de précision (vérifier si le mdp trouvé est le bon)
-- Test de terminaison (vérifier que le mécanisme de terminaison fonctionne correctement, cad, threads sont terminées une fois que le mdp est trouvé)
-- Test de synchronisation (vérifier la fiabilité des valeurs des données partagées)
 
-*----------------------(à effectuer)-----------------------*
+### *Temps de recherche en millisecondes pour le même mot de passe selon le nombre de threads*
+    
+| Nombre de threads | Temps de recherche [ms] |
+| --------- | --------- |
+| 3 | 11128 | 
+| 10 | 22422 | 
+| 20 | 29237 | 
+
+
+Dans ce tableau, nous avons représenté le temps de recherche du hash du mot de passe à 4 lettres "*KKKK*" en fonction du nombre de threads utilisés dans notre programme.
+
+Nous constatons un comportement inattendu, à savoir que le temps de recherche augmente à mesure que le nombre de threads augmente, ce qui semble aller à l'encontre de notre intuition.
+Ce comportement peut être attribué à une gestion inadéquate des ressources partagées. Lorsque plusieurs threads accèdent simultanément aux mêmes variables partagées, cela peut entraîner des temps d'attente et des ralentissements.
+
+
+### *Temps de recherche en millisecondes en fonction de la taille du mot de passe*
+
+| Taille du mot de passe [lettres] | Temps de recherche [ms] |
+| --------- | --------- |
+| 5 | 1,6 | 
+| 10 | 6 | 
+| 15 | 7,3 | 
+
+Ce tableau présente une analyse du temps de recherche en fonction de la taille du mot de passe associé à un hash généré. Les observations démontrent qu'à mesure que la taille du mot de passe augmente, le temps de recherche nécessaire pour le retrouver augmente également. En d'autres termes, les mots de passe plus longs demandent davantage de temps pour être identifiés, ce qui est en accord avec nos prévisions et attentes.
+
+### *Temps de recherche en millisecondes pour différents mots classés par ordre alphabétique*
+
+| Classement | Mot | Temps de recherche [ms] |
+| --------- | --------- | --------- |
+|1| aaaa | 4 | 
+|2|zzzz | 7430 | 
+|3|JJJJ | 10758 | 
+|4|ZZZZ| 14972|
+|5|***a| 233 | 
+
+Pour ce test, nous avons pris une liste de mots triés par ordre alphabétique puis nous avons calculé le temps de recherche pris par l'algorithme. 
+En général, nous avons observé une tendance où le temps de recherche augmente à mesure que nous progressons dans le dictionnaire, ce qui est cohérent avec nos attentes. Cependant, il y a une valeur qui se distingue comme étant particulièrement surprenante, celle associée au mot "***a."
+
+### Test de précision de recherche
+
+Nous avons réalisé plusieurs autres tests aléatoires en plus des ceux précédemment mentionnés. Lorsque nous avons entrepris de rechercher des mots de passe situés en fin de dictionnaire et comportant plus de 4 caractères, nous avons été confrontés à des temps d'attente considérablement prolongés, atteignant parfois plusieurs minutes. Dans certains cas, notamment lors de la recherche de mots de passe tels que "FFFGG" ou composés uniquement de caractères spéciaux ("*****"), nous n'avons pas réussi à les trouver du tout.
 
 # Conclusion
 
-En implémentant le parallélisme à l'aide de threads, nous avons considérablement amélioré les performances de l'application, réduisant ainsi le temps nécessaire pour cracker un hash MD5. Les tests effectués ont confirmé que le logiciel fonctionne de manière précise et efficace, tout en garantissant la terminaison précoce des threads pour économiser des ressources.
-
-*----------------------(à completer)-----------------------*
-
-*Dire si on a eu des échecs, choses qui ne jouent pas, qu'on a pas réussi à implémenter*
-
-*----------------------(à completer)-----------------------*
-
-
 Ce projet illustre la manière dont l'utilisation du parallélisme peut avoir un impact significatif sur les performances d'une application. Il offre également une démonstration de l'importance de la synchronisation et du partage de données entre les threads pour garantir un fonctionnement correct.
+
+En implémentant le parallélisme à l'aide de threads, nous nous attendions à améliorer considérablement les performances de l'application, réduisant ainsi le temps nécessaire pour cracker un hash MD5. 
+
+Toutefois, certains tests ont montré les limitations et vulnérabilités de notre algorithme notamment pour les cas de mots de passe à plus de 4 lettres ou placés en fin de dictionnaire. 
+
+Pour améliorer le comportement de notre programme, il serait bien d'étudier la manière dont nous avons géré les ressources partagées. Cela pourrait inclure une synchronisation plus fine des threads, la réduction des temps d'attente ou même l'optimisation de la manière dont les données partagées sont accédées.
