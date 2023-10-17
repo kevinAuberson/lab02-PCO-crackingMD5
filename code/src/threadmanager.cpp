@@ -1,9 +1,29 @@
+// Fichier              :   threadmanager.cpp
+// Date modification    :   17.10.2023
+// Auteurs              :   Auberson Kevin, Cosmo Vitória
+// Modification         :   Ajustement de la fonction startHacking basé sur
+//                          l'implémentation de la fonction workThread
+//                          dans mythread.h
+
 #include <QCryptographicHash>
 #include <QVector>
 #include "mythread.h"
 #include "threadmanager.h"
 
-extern QString result;
+/*
+ * Nombre total de possibilité de mot de passe
+ * Utilisation : workThread (1 lecture),
+ *               ThreadManager::startHacking (1 écriture)
+ * Protection  : aucune
+ */
+long long unsigned int nbToComputeGlobal;
+/*
+ * Mot de passe clair
+ * Utilisation : workThread (1 écriture),
+ *               ThreadManager::startHacking (1 écriture et valeur de retour)
+ * Protection  : aucune
+ */
+QString result;
 
 /*
  * std::pow pour les long long unsigned int
@@ -55,8 +75,10 @@ QString ThreadManager::startHacking(
         unsigned int nbThreads
 )
 {
-
-    long long unsigned int nbToCompute;
+    /*
+     * Variable de résultat du hash trouvé par les threads
+     */
+    result = "";
 
     /*
      * Nombre de caractères différents pouvant composer le mot de passe
@@ -66,7 +88,14 @@ QString ThreadManager::startHacking(
     /*
      * Calcul du nombre de hash à générer
      */
-    nbToCompute        = intPow(charset.length(),nbChars);
+    nbToComputeGlobal  = intPow(charset.length(),nbChars);
+
+    /*
+     * Calcul du nombre de hash à tester par thread,
+     * le plus 1 pour régler le problème de division entière
+     */
+    long long unsigned int nbToComputePerThread = (nbToComputeGlobal/nbThreads)
+            +1;
 
     /*
      * Nombre de caractères différents pouvant composer le mot de passe
@@ -74,18 +103,28 @@ QString ThreadManager::startHacking(
     nbValidChars       = charset.length();
 
 
-
-
     QVector<PcoThread*> threads;
 
     for (unsigned int i = 0; i < nbThreads; i++){
-        threads.push_back(new PcoThread(workThread,this, i, nbThreads, nbToCompute, std::ref(hash),  std::ref(salt), nbValidChars, std::ref(charset), nbChars));
+        threads.push_back(new PcoThread(
+                              workThread,
+                              this,
+                              i,
+                              nbThreads,
+                              nbToComputePerThread,
+                              std::ref(hash),
+                              std::ref(salt),
+                              nbValidChars,
+                              std::ref(charset),
+                              nbChars
+                              )
+                          );
     }
 
     for (PcoThread* thread : threads){
         thread->join();
         delete thread;
     }
-    //  renvoie le bon hash ou est vide si aucun trouver
+    /* renvoie le bon hash ou est vide si aucun trouver */
     return result;
 }
