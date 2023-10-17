@@ -73,7 +73,7 @@ Nous constatons un comportement inattendu, à savoir que le temps de recherche a
 Ce comportement peut être attribué à une gestion inadéquate des ressources partagées. Lorsque plusieurs threads accèdent simultanément aux mêmes variables partagées, cela peut entraîner des temps d'attente et des ralentissements.
 
 
-### *Temps de recherche en millisecondes en fonction de la taille du mot de passe*
+### *Temps de recherche en millisecondes avec 3 threads en fonction de la taille du mot de passe*
 
 | Taille du mot de passe [lettres] | Temps de recherche [ms] |
 | --------- | --------- |
@@ -83,7 +83,7 @@ Ce comportement peut être attribué à une gestion inadéquate des ressources p
 
 Ce tableau présente une analyse du temps de recherche en fonction de la taille du mot de passe associé à un hash généré. Les observations démontrent qu'à mesure que la taille du mot de passe augmente, le temps de recherche nécessaire pour le retrouver augmente également. En d'autres termes, les mots de passe plus longs demandent davantage de temps pour être identifiés, ce qui est en accord avec nos prévisions et attentes.
 
-### *Temps de recherche en millisecondes pour différents mots classés par ordre alphabétique*
+### *Temps de recherche en millisecondes avec 3 threads pour différents mots classés par ordre alphabétique*
 
 | Classement | Mot | Temps de recherche [ms] |
 | --------- | --------- | --------- |
